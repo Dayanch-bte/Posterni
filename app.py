@@ -200,14 +200,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
 
-    if user_id == ADMIN_ID and user_id in waiting_for:
-    step = waiting_for[user_id]
-
-    if step == 'add_user':
-        ...
-    elif step == 'remove_user':
-        ...
-    elif step == 'broadcast':
+    if step == 'broadcast':
         text = update.message.text
         count = 0
         for uid in ALLOWED_USERS.union({ADMIN_ID}):
@@ -218,7 +211,6 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 pass
         await update.message.reply_text(f"✅ Bildiriş {count} ulanyja ugradyldy.")
         waiting_for.pop(user_id)
-        return
         elif step == 'remove_user':
             try:
                 rem_id = int(update.message.text)
