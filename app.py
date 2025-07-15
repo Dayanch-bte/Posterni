@@ -198,8 +198,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # 💬 MESSAGE Handler
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.message.from_user.id
+    user_id = update.effective_user.id
 
+    if user_id not in waiting_for:
+        return
+
+    step = waiting_for[user_id]
+
+    # ✅ Admin bildiriş ugratmak
     if step == 'broadcast':
         text = update.message.text
         count = 0
@@ -211,74 +217,87 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 pass
         await update.message.reply_text(f"✅ Bildiriş {count} ulanyja ugradyldy.")
         waiting_for.pop(user_id)
-        elif step == 'remove_user':
-            try:
-                rem_id = int(update.message.text)
-                ALLOWED_USERS.discard(rem_id)
-                await update.message.reply_text("❌ Ulanyjy aýryldy.")
-            except:
-                await update.message.reply_text("⚠️ ID san görnüşinde bolmaly.")
-            waiting_for.pop(user_id)
-            return
+        return
 
+    # ✅ Ulanyjy aýyrmak
+    elif step == 'remove_user':
+        try:
+            rem_id = int(update.message.text)
+            ALLOWED_USERS.discard(rem_id)
+            await update.message.reply_text("❌ Ulanyjy aýryldy.")
+        except:
+            await update.message.reply_text("⚠️ ID san görnüşinde bolmaly.")
+        waiting_for.pop(user_id)
+        return
+
+    # ⛔ Ulanyjy rugsat berlen däl bolsa geçme
     if user_id != ADMIN_ID and user_id not in ALLOWED_USERS:
         return
 
-    if user_id in waiting_for:
-        step = waiting_for[user_id]
-        sess = user_sessions[user_id]
+    sess = user_sessions.get(user_id, {})
+    
+    # ✅ Surat ugratmak ädimi
+    if step == 'photo' and update.message.photo:
+        sess['photo'] = update.message.photo[-1].file_id
+        sess['type'] = 'surat'
+        user_sessions[user_id] = sess
+        waiting_for[user_id] = 'caption'
+        await update.message.reply_text("📝 Surata caption giriziň:")
 
-        if step == 'photo' and update.message.photo:
-            sess['photo'] = update.message.photo[-1].file_id
-            waiting_for[user_id] = 'caption'
-            await update.message.reply_text("📝 Surata caption giriziň:")
+    # ✅ Caption girizmek
+    elif step == 'caption':
+        sess['caption'] = update.message.text
+        waiting_for[user_id] = 'minute'
+        await update.message.reply_text("🕒 Her näçe minutda ugradylsyn?")
 
-        elif step == 'text':
-            sess['text'] = update.message.text
-            waiting_for[user_id] = 'minute'
-            await update.message.reply_text("🕒 Her näçe minutda ugradylsyn?")
+    # ✅ Tekst post
+    elif step == 'text':
+        sess['text'] = update.message.text
+        sess['type'] = 'text'
+        waiting_for[user_id] = 'minute'
+        await update.message.reply_text("🕒 Her näçe minutda ugradylsyn?")
 
-        elif step == 'caption':
-            sess['caption'] = update.message.text
-            waiting_for[user_id] = 'minute'
-            await update.message.reply_text("🕒 Her näçe minutda ugradylsyn?")
+    # ✅ Minut soramak
+    elif step == 'minute':
+        try:
+            sess['minute'] = int(update.message.text)
+            waiting_for[user_id] = 'day'
+            await update.message.reply_text("📅 Näçe gün dowam etsin?")
+        except:
+            await update.message.reply_text("⚠️ San bilen giriziň!")
 
-        elif step == 'minute':
-            try:
-                sess['minute'] = int(update.message.text)
-                waiting_for[user_id] = 'day'
-                await update.message.reply_text("📅 Näçe gün dowam etsin?")
-            except:
-                await update.message.reply_text("⚠️ San bilen giriziň!")
+    # ✅ Gün soramak
+    elif step == 'day':
+        try:
+            sess['day'] = int(update.message.text)
+            waiting_for[user_id] = 'channel'
+            await update.message.reply_text("📢 Haýsy kanal? (@username görnüşinde)")
+        except:
+            await update.message.reply_text("⚠️ San bilen giriziň!")
 
-        elif step == 'day':
-            try:
-                sess['day'] = int(update.message.text)
-                waiting_for[user_id] = 'channel'
-                await update.message.reply_text("📢 Haýsy kanal? (@username görnüşinde)")
-            except:
-                await update.message.reply_text("⚠️ San bilen giriziň!")
+    # ✅ Kanal we soňky ýatyrma
+    elif step == 'channel':
+        sess['channel'] = update.message.text.strip()
+        waiting_for.pop(user_id)
 
-        elif step == 'channel':
-            sess['channel'] = update.message.text.strip()
-            waiting_for.pop(user_id)
+        post = {
+            'user_id': user_id,
+            'type': sess['type'],
+            'minute': sess['minute'],
+            'day': sess['day'],
+            'channel': sess['channel'],
+            'next_time': time.time(),
+            'sent_count': 0,
+            'max_count': (sess['day'] * 24 * 60) // sess['minute']
+        }
 
-            post = {
-                'user_id': user_id,
-                'type': sess['type'],
-                'minute': sess['minute'],
-                'day': sess['day'],
-                'channel': sess['channel'],
-                'next_time': time.time(),
-                'sent_count': 0,
-                'max_count': (sess['day'] * 24 * 60) // sess['minute']
-            }
-            if sess['type'] == 'surat':
-                post['photo'], post['caption'] = sess['photo'], sess['caption']
-            else:
-                post['text'] = sess['text']
-            scheduled_posts.append(post)
-            await update.message.reply_text("✅ Post goşuldy, awtomat goýulýar.")
+        if sess['type'] == 'surat':
+            post['photo'], post['caption'] = sess['photo'], sess['caption']
+        else:
+            post['text'] = sess['text']
+
+        scheduled_posts.append(post)
+        await update.message.reply_text("✅ Post üstünlikli döredildi.")
 
 # ⏰ Post Scheduler
 async def scheduler(app):
