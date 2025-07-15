@@ -9,7 +9,7 @@ from telegram.ext import (
 # 👤 ADMIN & KANAL KONFIGURASIÝASY
 ADMIN_ID = 8143084360  # <-- Sanlar düzgün saklanýar
 ALLOWED_USERS = set()
-REQUIRED_CHANNELS = ['@DaykaVPNS', '@Lion_Servers', '@Baburoff_VPN', '@Dayka_Store_Chatt', '@VPNDAYKA']  # <- Özüňiziň kanallaryňyzy şu ýere ýaz
+REQUIRED_CHANNELS = ['@VPNDAYKA', '@DaykaVPNS', '@Bazaroff_Vpns', '@Lion_Servers', '@Baburoff_VPN', '@Dayka_Store_Chatt']  # <- Özüňiziň kanallaryňyzy şu ýere ýaz
 
 # 🗂️ Sesssiýa maglumatlary
 user_sessions = {}
