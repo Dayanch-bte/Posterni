@@ -9,7 +9,7 @@ from telegram.ext import (
 # 👤 ADMIN & KANAL KONFIGURASIÝASY
 ADMIN_ID = 8143084360  # <-- Sanlar düzgün saklanýar
 ALLOWED_USERS = set()
-REQUIRED_CHANNELS = ['@DaykaVPNS', '@Lion_Servers', '@Baburoff_VPN', '@Dayka_Store_Chatt', '@VPNDAYKA', '@CloudF_Tanez']  # <- Özüňiziň kanallaryňyzy şu ýere ýaz
+REQUIRED_CHANNELS = ['@DaykaVPNS', '@Lion_Servers', '@Baburoff_VPN', '@Dayka_Store_Chatt', '@VPNDAYKA']  # <- Özüňiziň kanallaryňyzy şu ýere ýaz
 
 # 🗂️ Sesssiýa maglumatlary
 user_sessions = {}
@@ -93,6 +93,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [InlineKeyboardButton("➕ Ulanyjy goş", callback_data='add_user')],
                 [InlineKeyboardButton("➖ Ulanyjy aýyr", callback_data='remove_user')],
                 [InlineKeyboardButton("📋 Sanawy gör", callback_data='list_users')],
+                [InlineKeyboardButton("📢 Bildiriş ugrat", callback_data='broadcast')],
                 [InlineKeyboardButton("⬅ Yza", callback_data='back')]
             ])
         )
@@ -106,11 +107,22 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("🆔 Aýyrmaly ulanyjynyň ID-sini giriziň:")
 
     elif data == 'list_users' and user_id == ADMIN_ID:
-        if not ALLOWED_USERS:
-            await query.edit_message_text("📭 Hiç hili ulanyjy goşulmady.")
-        else:
-            text = "✅ Rugsat berlen ulanyjylar:\n" + "\n".join([f"- {u}" for u in ALLOWED_USERS])
-            await query.edit_message_text(text)
+    if not ALLOWED_USERS:
+        await query.edit_message_text("📭 Hiç hili ulanyjy goşulmady.")
+    else:
+        text = "✅ Rugsat berlen ulanyjylar:\n"
+        for uid in ALLOWED_USERS:
+            try:
+                user = await context.bot.get_chat(uid)
+                name = f"@{user.username}" if user.username else user.full_name
+                text += f"{uid} {name}\n"
+            except Exception as e:
+                text += f"{uid} ❌ Ulanyjy tapylmady\n"
+        await query.edit_message_text(text)
+
+    elif data == 'broadcast' and user_id == ADMIN_ID:
+    waiting_for[user_id] = 'broadcast'
+    await query.edit_message_text("✉ Bildirişiň mazmunyny ýazyň:")
 
     elif data == 'back':
         await query.edit_message_text("🔙 Yza gaýdýarys...", reply_markup=main_menu_keyboard(user_id))
@@ -189,16 +201,24 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
 
     if user_id == ADMIN_ID and user_id in waiting_for:
-        step = waiting_for[user_id]
-        if step == 'add_user':
+    step = waiting_for[user_id]
+
+    if step == 'add_user':
+        ...
+    elif step == 'remove_user':
+        ...
+    elif step == 'broadcast':
+        text = update.message.text
+        count = 0
+        for uid in ALLOWED_USERS.union({ADMIN_ID}):
             try:
-                new_id = int(update.message.text)
-                ALLOWED_USERS.add(new_id)
-                await update.message.reply_text("✅ Ulanyjy goşuldy.")
+                await context.bot.send_message(uid, f"📢 Admin bildirişi:\n\n{text}")
+                count += 1
             except:
-                await update.message.reply_text("⚠️ ID san görnüşinde bolmaly.")
-            waiting_for.pop(user_id)
-            return
+                pass
+        await update.message.reply_text(f"✅ Bildiriş {count} ulanyja ugradyldy.")
+        waiting_for.pop(user_id)
+        return
         elif step == 'remove_user':
             try:
                 rem_id = int(update.message.text)
@@ -299,7 +319,7 @@ async def scheduler(app):
 
 # 🔁 Main
 async def main():
-    app = ApplicationBuilder().token("7991348150:AAF75OU3trKi4pVovGZpSOoC7xsVbMlkOt8").build()  # Bot tokeniňizi şu ýere goýuň
+    app = ApplicationBuilder().token("7479642739:AAEfXALyDuNlETm3Z0CdaBbxj48qNawpam4").build()  # Bot tokeniňizi şu ýere goýuň
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_handler))
