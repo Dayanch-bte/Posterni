@@ -121,8 +121,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text(text)
 
     elif data == 'broadcast' and user_id == ADMIN_ID:
-    waiting_for[user_id] = 'broadcast'
-    await query.edit_message_text("✉ Bildirişiň mazmunyny ýazyň:")
+        waiting_for[user_id] = 'broadcast'
+        await query.edit_message_text("📢 Ugratmaly bildirişiňizi ýazyp iberiň:")
 
     elif data == 'back':
         await query.edit_message_text("🔙 Yza gaýdýarys...", reply_markup=main_menu_keyboard(user_id))
