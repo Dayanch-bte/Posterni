@@ -110,18 +110,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not ALLOWED_USERS:
         await query.edit_message_text("📭 Hiç hili ulanyjy goşulmady.")
     else:
-        text = "✅ Rugsat berlen ulanyjylar:\n" + "\n".join([f"- {u}" for u in ALLOWED_USERS])
-        await query.edit_message_text(text)
-        await query.edit_message_text("📭 Hiç hili ulanyjy goşulmady.")
-    else:
-        text = "✅ Rugsat berlen ulanyjylar:\n"
-        for uid in ALLOWED_USERS:
-            try:
-                user = await context.bot.get_chat(uid)
-                name = f"@{user.username}" if user.username else user.full_name
-                text += f"{uid} {name}\n"
-            except Exception as e:
-                text += f"{uid} ❌ Ulanyjy tapylmady\n"
+        text = "✅ Rugsat berlen ulanyjylar:\n" + "\n".join(
+            [f"{uid} @{(await context.bot.get_chat(uid)).username or '—'}" for uid in ALLOWED_USERS]
+        )
         await query.edit_message_text(text)
 
     elif data == 'broadcast' and user_id == ADMIN_ID:
