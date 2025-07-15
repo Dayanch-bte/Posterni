@@ -110,6 +110,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not ALLOWED_USERS:
         await query.edit_message_text("📭 Hiç hili ulanyjy goşulmady.")
     else:
+        text = "✅ Rugsat berlen ulanyjylar:\n" + "\n".join([f"- {u}" for u in ALLOWED_USERS])
+        await query.edit_message_text(text)
+        await query.edit_message_text("📭 Hiç hili ulanyjy goşulmady.")
+    else:
         text = "✅ Rugsat berlen ulanyjylar:\n"
         for uid in ALLOWED_USERS:
             try:
@@ -319,7 +323,7 @@ async def scheduler(app):
 
 # 🔁 Main
 async def main():
-    app = ApplicationBuilder().token("7479642739:AAEfXALyDuNlETm3Z0CdaBbxj48qNawpam4").build()  # Bot tokeniňizi şu ýere goýuň
+    app = ApplicationBuilder().token("7991348150:AAF75OU3trKi4pVovGZpSOoC7xsVbMlkOt8").build()  # Bot tokeniňizi şu ýere goýuň
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_handler))
